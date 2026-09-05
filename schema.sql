@@ -69,4 +69,7 @@ CREATE TABLE detalle_pedido (
 create index idx_producto_categoria on producto(categoria_id);
 create index idx_pedido_usuario on pedido(usuario_id);
 create index idx_detalle_pedido on detalle_pedido(pedido_id);
+create index idx_pedido_estado_fecha on pedido(estado,fecha);
+create index idx_producto_desc on producto using GIN (to_tsvector('spanish', descripcion));
+create index idx_detalle_producto on detalle_pedido(producto_id);
 
