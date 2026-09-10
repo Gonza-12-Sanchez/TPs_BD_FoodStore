@@ -39,34 +39,39 @@ SELECT
 FROM generate_series(1, 200000) AS gs
 CROSS JOIN user_ids;
 
+
 -- 4) 200.000 detalles - 1 por pedido, producto tomado de ids reales
 WITH prod_ids AS (SELECT array_agg(id) AS ids FROM producto),
      nuevos AS (SELECT id AS pedido_id FROM pedido ORDER BY id DESC LIMIT 200000)
 INSERT INTO detalle_pedido (cantidad, precio_unitario, subtotal, pedido_id, producto_id)
-SELECT
-    (1 + floor(random()*5))::int AS cantidad,
-    p.precio                     AS precio_unitario,
-    ((1 + floor(random()*5))::int * p.precio)::numeric(12,2) AS subtotal,
+SELECT 
+    gen.cantidad,
+    p.precio AS precio_unitario,
+    (gen.cantidad * p.precio)::numeric(12,2) AS subtotal,
     np.pedido_id,
     p.id
 FROM nuevos np
 CROSS JOIN prod_ids
 CROSS JOIN LATERAL (
-    SELECT id, precio FROM producto
-    WHERE id = prod_ids.ids[1 + floor(random()*array_length(prod_ids.ids,1))::int]
-) p;
+    -- Al poner np.pedido_id en el WHERE obligamos al motor a recalcular por cada fila
+    SELECT 
+        (1 + floor(random()*5))::int AS cantidad,
+        prod_ids.ids[1 + floor(random()*array_length(prod_ids.ids,1))::int] AS rand_id
+    WHERE np.pedido_id IS NOT NULL 
+) gen
+JOIN producto p ON p.id = gen.rand_id;
 
 -- 5) Recalcular totales de los 200k pedidos nuevos
 UPDATE pedido p SET total = s.suma
 FROM (
     SELECT pedido_id, SUM(subtotal)::numeric(12,2) AS suma
     FROM detalle_pedido
-    WHERE pedido_id IN (SELECT id FROM pedido ORDER BY id DESC LIMIT 200000)
+    WHERE pedido_id > 5
     GROUP BY pedido_id
 ) s
 WHERE p.id = s.pedido_id;
 
-commit;
+rollback;
 
 -- Verificacion carga masiva correctamente
 SELECT 'producto' AS tabla, count(*) FROM producto
