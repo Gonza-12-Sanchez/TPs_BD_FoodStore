@@ -5,7 +5,7 @@
 -- Requiere schema.sql + data.sql ya ejecutados. Usar en copia_trabajo:
 --   BEGIN; \i TP3/carga_masiva.sql; -- verificar; ROLLBACK o COMMIT;
 
-begin;
+BEGIN;
 -- 1) 50.000 productos
 INSERT INTO producto (nombre, precio, descripcion, stock, categoria_id)
 SELECT
@@ -71,7 +71,7 @@ FROM (
 ) s
 WHERE p.id = s.pedido_id;
 
-rollback;
+COMMIT;
 
 -- Verificacion carga masiva correctamente
 SELECT 'producto' AS tabla, count(*) FROM producto
