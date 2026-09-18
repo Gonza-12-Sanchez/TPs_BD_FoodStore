@@ -16,3 +16,8 @@ CREATE INDEX idx_pedido_fecha_vig ON pedido(fecha) WHERE eliminado = FALSE;
 -- Índice DESCARTADO por sobreindexación (no crear)
 -- Propuesta: CREATE INDEX idx_pedido_estado ON pedido(estado);
 -- Motivo: baja cardinalidad (4 estados), sin condición parcial, redundante con idx_pedido_estado_fecha(estado,fecha) ya existente en schema.sql. No cambia ningún plan de Q1-Q3.
+
+BEGIN;
+INSERT INTO detalle_pedido (cantidad, precio_unitario, subtotal, pedido_id, producto_id)
+SELECT 1, 100, 100, id, 1 FROM pedido ORDER BY id DESC LIMIT 500;
+ROLLBACK;

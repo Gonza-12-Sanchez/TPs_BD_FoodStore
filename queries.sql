@@ -73,6 +73,7 @@ WHERE  id = 1 AND eliminado = FALSE;
 
 ---- Épica 4 — Gestión de Pedidos y Detalles
 -- Listar pedidos (versión heredada Semana 3-4 - consulta directa sin depender de vistas/procedures de Semana 6)
+explain analyze 
 SELECT ped.id, u.nombre || ' ' || u.apellido AS usuario, ped.fecha, ped.estado, ped.forma_pago, ped.total
 FROM   pedido ped
 JOIN   usuario u ON u.id = ped.usuario_id
@@ -114,6 +115,7 @@ COMMIT;
 
 --                                  Consultas analíticas (para profundizar)                         --
 -- A) Top 5 productos más vendidos (por cantidad)
+explain analyze
 SELECT pr.id, pr.nombre, SUM(dp.cantidad) AS unidades
 FROM   detalle_pedido dp
 JOIN   producto pr ON pr.id = dp.producto_id
@@ -123,6 +125,7 @@ ORDER  BY unidades DESC
 LIMIT  5;
  
 -- B) Facturación por categoría y por mes
+explain analyze 
 SELECT c.nombre AS categoria,
        date_trunc('month', ped.fecha) AS mes,
        SUM(dp.subtotal) AS facturado
