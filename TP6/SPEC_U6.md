@@ -30,7 +30,7 @@ Se especifican cuatro tareas operativas sobre `foodstore`. Queda fuera de alcanc
 ## 4. Baseline de validación
 
 Tablas del esquema real (`schema.sql`), a contar antes del respaldo y después de restaurar: `categoria`, `producto`, `usuario`, `pedido`, `detalle_pedido`.
-Los conteos post-restauración deben ser **idénticos** al baseline. Los controles lógicos (`precio`/`stock` negativos en `producto`, `cantidad <= 0` o `precio_unitario < 0` en `detalle_pedido`) deben devolver **0**. El esquema no tiene tabla `cliente`: la equivalencia se toma sobre `usuario`.
+Los conteos post-restauración deben ser **idénticos** al baseline registrado en `baseline_u6.md`. Los controles lógicos (`precio`/`stock` negativos en `producto`, `cantidad <= 0` o `precio_unitario < 0` en `detalle_pedido`) deben devolver **0**. El esquema no tiene tabla `cliente`: la equivalencia se toma sobre `usuario`.
 
 ## 5. Objetivos previstos
 
@@ -41,8 +41,10 @@ Los conteos post-restauración deben ser **idénticos** al baseline. Los control
 
 Valores a comparar contra lo observado en `informe_u6.pdf`.
 
-## 6. Supuestos a confirmar antes de automatizar
+## 6. Entorno verificado
 
-- El nombre real de la base del entorno es `foodstore` (el repo usa `copia_food_store` en `schema.sql` y `food_store` en `protocolo_seguridad.md`); se unifica a `foodstore` por consigna.
-- `pg_dump` 16+ está en el `PATH` y el usuario `postgres` tiene permisos de lectura sobre todas las tablas.
-- El volumen de datos de prueba es el de `TP3/Parte 1/carga_masiva.sql` (≈ 50k productos, 20k usuarios, 200k pedidos, 200k detalles).
+- **Servidor:** PostgreSQL **17.10** en `localhost:5432` (única instalación de la máquina). Cliente `pg_dump` 17 → sin desajuste de versiones.
+- **Base principal:** `foodstore`, creada el 2026-10-28, **251 MB** (5 tablas, 18 índices, 3 vistas). Conteos en `baseline_u6.md`.
+- **Base de restauración:** `foodstore_restore_test`, a crear en el simulacro.
+- **Credenciales:** `%APPDATA%\postgresql\pgpass.conf`; los scripts usan `--no-password` y fallan si no encuentran credenciales.
+- **Origen de la base:** reconstruida desde el repo (`schema.sql` → `data.sql` → `TP5/4-A/indices.sql` → `TP5/4-B/views.sql` → `TP3/Parte 1/carga_masiva.sql`). `copia_food_store` quedó intacta como respaldo previo en `backups/pre_u6.dump`.

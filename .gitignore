@@ -1,0 +1,9 @@
+# Respaldos y logs generados durante la ejecución del TP
+backups/
+logs/
+*.dump
+*.log
+
+# Credenciales: nunca deben versionarse
+pgpass.conf
+.pgpass
