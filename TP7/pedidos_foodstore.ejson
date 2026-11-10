@@ -1,0 +1,192 @@
+[
+    {
+        "_id": "1",
+        "fecha": "2026-10-28",
+        "total": {
+            "$numberDecimal": "460.00"
+        },
+        "estado": "PENDIENTE",
+        "lineas": [
+            {
+                "id": "1",
+                "cantidad": 2,
+                "producto": "Empanada de Carne",
+                "subtotal": {
+                    "$numberDecimal": "300.00"
+                },
+                "producto_id": "1",
+                "precio_unitario": {
+                    "$numberDecimal": "150.00"
+                }
+            },
+            {
+                "id": "2",
+                "cantidad": 1,
+                "producto": "Empanada de Jamón y Queso",
+                "subtotal": {
+                    "$numberDecimal": "160.00"
+                },
+                "producto_id": "2",
+                "precio_unitario": {
+                    "$numberDecimal": "160.00"
+                }
+            }
+        ],
+        "cliente": {
+            "id": "1"
+        },
+        "forma_pago": "EFECTIVO"
+    },
+    {
+        "_id": "2",
+        "fecha": "2026-10-28",
+        "total": {
+            "$numberDecimal": "1700.00"
+        },
+        "estado": "PENDIENTE",
+        "lineas": [
+            {
+                "id": "3",
+                "cantidad": 1,
+                "producto": "Pizza Margherita",
+                "subtotal": {
+                    "$numberDecimal": "800.00"
+                },
+                "producto_id": "3",
+                "precio_unitario": {
+                    "$numberDecimal": "800.00"
+                }
+            },
+            {
+                "id": "4",
+                "cantidad": 1,
+                "producto": "Pizza Pepperoni",
+                "subtotal": {
+                    "$numberDecimal": "900.00"
+                },
+                "producto_id": "4",
+                "precio_unitario": {
+                    "$numberDecimal": "900.00"
+                }
+            }
+        ],
+        "cliente": {
+            "id": "2"
+        },
+        "forma_pago": "TARJETA"
+    },
+    {
+        "_id": "3",
+        "fecha": "2026-10-28",
+        "total": {
+            "$numberDecimal": "400.00"
+        },
+        "estado": "CONFIRMADO",
+        "lineas": [
+            {
+                "id": "5",
+                "cantidad": 3,
+                "producto": "Coca Cola",
+                "subtotal": {
+                    "$numberDecimal": "300.00"
+                },
+                "producto_id": "5",
+                "precio_unitario": {
+                    "$numberDecimal": "100.00"
+                }
+            },
+            {
+                "id": "6",
+                "cantidad": 2,
+                "producto": "Agua Mineral",
+                "subtotal": {
+                    "$numberDecimal": "100.00"
+                },
+                "producto_id": "6",
+                "precio_unitario": {
+                    "$numberDecimal": "50.00"
+                }
+            }
+        ],
+        "cliente": {
+            "id": "3"
+        },
+        "forma_pago": "TRANSFERENCIA"
+    },
+    {
+        "_id": "4",
+        "fecha": "2026-10-28",
+        "total": {
+            "$numberDecimal": "1090.00"
+        },
+        "estado": "TERMINADO",
+        "lineas": [
+            {
+                "id": "7",
+                "cantidad": 1,
+                "producto": "Pizza Cuatro Quesos",
+                "subtotal": {
+                    "$numberDecimal": "950.00"
+                },
+                "producto_id": "9",
+                "precio_unitario": {
+                    "$numberDecimal": "950.00"
+                }
+            },
+            {
+                "id": "8",
+                "cantidad": 1,
+                "producto": "Empanada de Verdura",
+                "subtotal": {
+                    "$numberDecimal": "140.00"
+                },
+                "producto_id": "10",
+                "precio_unitario": {
+                    "$numberDecimal": "140.00"
+                }
+            }
+        ],
+        "cliente": {
+            "id": "4"
+        },
+        "forma_pago": "EFECTIVO"
+    },
+    {
+        "_id": "5",
+        "fecha": "2026-10-28",
+        "total": {
+            "$numberDecimal": "550.00"
+        },
+        "estado": "CANCELADO",
+        "lineas": [
+            {
+                "id": "9",
+                "cantidad": 1,
+                "producto": "Tarta de Dulce de Leche",
+                "subtotal": {
+                    "$numberDecimal": "250.00"
+                },
+                "producto_id": "7",
+                "precio_unitario": {
+                    "$numberDecimal": "250.00"
+                }
+            },
+            {
+                "id": "10",
+                "cantidad": 1,
+                "producto": "Helado de Chocolate",
+                "subtotal": {
+                    "$numberDecimal": "300.00"
+                },
+                "producto_id": "8",
+                "precio_unitario": {
+                    "$numberDecimal": "300.00"
+                }
+            }
+        ],
+        "cliente": {
+            "id": "5"
+        },
+        "forma_pago": "TARJETA"
+    }
+]

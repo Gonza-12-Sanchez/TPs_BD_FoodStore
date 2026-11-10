@@ -1,0 +1,11 @@
+{
+  "name": "food-store-tp7",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "node mongoose_demo.js"
+  },
+  "dependencies": {
+    "mongoose": "^8.0.0"
+  }
+}
