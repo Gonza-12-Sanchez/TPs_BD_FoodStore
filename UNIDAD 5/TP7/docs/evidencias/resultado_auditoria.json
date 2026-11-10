@@ -1,0 +1,60 @@
+[
+  {
+    "operacion": "BEGIN",
+    "estado": "BEGIN",
+    "filas": []
+  },
+  {
+    "operacion": "SELECT id,nombre,precio FROM public.v_productos_vigentes ORDER BY id LIMIT 3",
+    "estado": "SELECT 3",
+    "filas": [
+      [
+        1,
+        "Producto 1",
+        "110.00"
+      ],
+      [
+        2,
+        "Producto 2",
+        "120.00"
+      ],
+      [
+        3,
+        "Producto 3",
+        "130.00"
+      ]
+    ]
+  },
+  {
+    "operacion": "INSERT INTO public.pedido(fecha,forma_pago,usuario_id)\nVALUES (CURRENT_DATE,'EFECTIVO',1) RETURNING id",
+    "estado": "INSERT 0 1",
+    "filas": [
+      [
+        21
+      ]
+    ]
+  },
+  {
+    "operacion": "UPDATE public.pedido SET estado='CONFIRMADO'\nWHERE id=currval('public.pedido_id_seq')",
+    "estado": "UPDATE 1",
+    "filas": []
+  },
+  {
+    "operacion": "SELECT id,estado FROM public.pedido WHERE id=currval('public.pedido_id_seq')",
+    "estado": "SELECT 1",
+    "filas": [
+      [
+        21,
+        "CONFIRMADO"
+      ]
+    ]
+  },
+  {
+    "operacion": "ROLLBACK",
+    "estado": "ROLLBACK",
+    "filas": []
+  },
+  {
+    "conexion_fallida": "rechazada por contrase\u00f1a incorrecta"
+  }
+]

@@ -1,0 +1,156 @@
+Pager usage is off.
+                                  List of roles
+      Role name      |                         Attributes                         
+---------------------+------------------------------------------------------------
+ admin_datos         | No inheritance
+ app_web             | 10 connections
+ postgres            | Superuser, Create role, Create DB, Replication, Bypass RLS
+ reportes_demo       | 3 connections
+ rol_app_escritura   | Cannot login
+ rol_app_lectura     | Cannot login
+ rol_auth_owner      | Cannot login
+ rol_operacion_owner | Cannot login
+ rol_reportes        | Cannot login
+ rol_soporte         | Cannot login
+ soporte_demo        | 3 connections
+
+       grantee       | table_schema |       table_name       | privilege_type | is_grantable 
+---------------------+--------------+------------------------+----------------+--------------
+ rol_app_escritura   | public       | detalle_pedido         | SELECT         | NO
+ rol_app_escritura   | public       | pedido                 | SELECT         | NO
+ rol_app_lectura     | public       | v_categorias_vigentes  | SELECT         | NO
+ rol_app_lectura     | public       | v_productos_vigentes   | SELECT         | NO
+ rol_operacion_owner | public       | detalle_pedido         | INSERT         | NO
+ rol_operacion_owner | public       | detalle_pedido         | SELECT         | NO
+ rol_operacion_owner | public       | pedido                 | INSERT         | NO
+ rol_operacion_owner | public       | pedido                 | SELECT         | NO
+ rol_operacion_owner | public       | producto               | SELECT         | NO
+ rol_reportes        | reportes     | v_usuarios_por_rol_mes | SELECT         | NO
+ rol_reportes        | reportes     | v_ventas_categoria_mes | SELECT         | NO
+ rol_soporte         | public       | v_pedidos_resumen      | SELECT         | NO
+ rol_soporte         | public       | v_usuarios_publico     | SELECT         | NO
+(13 rows)
+
+       grantee       |     table_name     |   column_name   | privilege_type | is_grantable 
+---------------------+--------------------+-----------------+----------------+--------------
+ rol_app_escritura   | detalle_pedido     | cantidad        | SELECT         | NO
+ rol_app_escritura   | detalle_pedido     | created_at      | SELECT         | NO
+ rol_app_escritura   | detalle_pedido     | eliminado       | SELECT         | NO
+ rol_app_escritura   | detalle_pedido     | id              | SELECT         | NO
+ rol_app_escritura   | detalle_pedido     | pedido_id       | SELECT         | NO
+ rol_app_escritura   | detalle_pedido     | precio_unitario | SELECT         | NO
+ rol_app_escritura   | detalle_pedido     | producto_id     | SELECT         | NO
+ rol_app_escritura   | detalle_pedido     | subtotal        | SELECT         | NO
+ rol_app_escritura   | pedido             | created_at      | SELECT         | NO
+ rol_app_escritura   | pedido             | eliminado       | SELECT         | NO
+ rol_app_escritura   | pedido             | estado          | SELECT         | NO
+ rol_app_escritura   | pedido             | estado          | UPDATE         | NO
+ rol_app_escritura   | pedido             | fecha           | INSERT         | NO
+ rol_app_escritura   | pedido             | fecha           | SELECT         | NO
+ rol_app_escritura   | pedido             | forma_pago      | INSERT         | NO
+ rol_app_escritura   | pedido             | forma_pago      | SELECT         | NO
+ rol_app_escritura   | pedido             | id              | SELECT         | NO
+ rol_app_escritura   | pedido             | total           | SELECT         | NO
+ rol_app_escritura   | pedido             | usuario_id      | INSERT         | NO
+ rol_app_escritura   | pedido             | usuario_id      | SELECT         | NO
+ rol_auth_owner      | usuario            | contrasena      | SELECT         | NO
+ rol_auth_owner      | usuario            | contrasena      | UPDATE         | NO
+ rol_auth_owner      | usuario            | eliminado       | SELECT         | NO
+ rol_auth_owner      | usuario            | id              | SELECT         | NO
+ rol_auth_owner      | usuario            | mail            | SELECT         | NO
+ rol_auth_owner      | usuario            | rol             | SELECT         | NO
+ rol_operacion_owner | detalle_pedido     | cantidad        | INSERT         | NO
+ rol_operacion_owner | detalle_pedido     | cantidad        | SELECT         | NO
+ rol_operacion_owner | detalle_pedido     | created_at      | INSERT         | NO
+ rol_operacion_owner | detalle_pedido     | created_at      | SELECT         | NO
+ rol_operacion_owner | detalle_pedido     | eliminado       | INSERT         | NO
+ rol_operacion_owner | detalle_pedido     | eliminado       | SELECT         | NO
+ rol_operacion_owner | detalle_pedido     | id              | INSERT         | NO
+ rol_operacion_owner | detalle_pedido     | id              | SELECT         | NO
+ rol_operacion_owner | detalle_pedido     | pedido_id       | INSERT         | NO
+ rol_operacion_owner | detalle_pedido     | pedido_id       | SELECT         | NO
+ rol_operacion_owner | detalle_pedido     | precio_unitario | INSERT         | NO
+ rol_operacion_owner | detalle_pedido     | precio_unitario | SELECT         | NO
+ rol_operacion_owner | detalle_pedido     | producto_id     | INSERT         | NO
+ rol_operacion_owner | detalle_pedido     | producto_id     | SELECT         | NO
+ rol_operacion_owner | detalle_pedido     | subtotal        | INSERT         | NO
+ rol_operacion_owner | detalle_pedido     | subtotal        | SELECT         | NO
+ rol_operacion_owner | pedido             | created_at      | INSERT         | NO
+ rol_operacion_owner | pedido             | created_at      | SELECT         | NO
+ rol_operacion_owner | pedido             | eliminado       | INSERT         | NO
+ rol_operacion_owner | pedido             | eliminado       | SELECT         | NO
+ rol_operacion_owner | pedido             | estado          | INSERT         | NO
+ rol_operacion_owner | pedido             | estado          | SELECT         | NO
+ rol_operacion_owner | pedido             | fecha           | INSERT         | NO
+ rol_operacion_owner | pedido             | fecha           | SELECT         | NO
+ rol_operacion_owner | pedido             | forma_pago      | INSERT         | NO
+ rol_operacion_owner | pedido             | forma_pago      | SELECT         | NO
+ rol_operacion_owner | pedido             | id              | INSERT         | NO
+ rol_operacion_owner | pedido             | id              | SELECT         | NO
+ rol_operacion_owner | pedido             | total           | INSERT         | NO
+ rol_operacion_owner | pedido             | total           | SELECT         | NO
+ rol_operacion_owner | pedido             | total           | UPDATE         | NO
+ rol_operacion_owner | pedido             | usuario_id      | INSERT         | NO
+ rol_operacion_owner | pedido             | usuario_id      | SELECT         | NO
+ rol_operacion_owner | producto           | categoria_id    | SELECT         | NO
+ rol_operacion_owner | producto           | created_at      | SELECT         | NO
+ rol_operacion_owner | producto           | descripcion     | SELECT         | NO
+ rol_operacion_owner | producto           | disponible      | SELECT         | NO
+ rol_operacion_owner | producto           | eliminado       | SELECT         | NO
+ rol_operacion_owner | producto           | id              | SELECT         | NO
+ rol_operacion_owner | producto           | imagen          | SELECT         | NO
+ rol_operacion_owner | producto           | nombre          | SELECT         | NO
+ rol_operacion_owner | producto           | precio          | SELECT         | NO
+ rol_operacion_owner | producto           | stock           | SELECT         | NO
+ rol_operacion_owner | producto           | stock           | UPDATE         | NO
+ rol_operacion_owner | usuario            | eliminado       | SELECT         | NO
+ rol_operacion_owner | usuario            | id              | SELECT         | NO
+ rol_soporte         | usuario            | apellido        | SELECT         | NO
+ rol_soporte         | usuario            | eliminado       | SELECT         | NO
+ rol_soporte         | usuario            | id              | SELECT         | NO
+ rol_soporte         | usuario            | mail            | SELECT         | NO
+ rol_soporte         | usuario            | nombre          | SELECT         | NO
+ rol_soporte         | usuario            | rol             | SELECT         | NO
+ rol_soporte         | v_pedidos_resumen  | estado          | SELECT         | NO
+ rol_soporte         | v_pedidos_resumen  | fecha           | SELECT         | NO
+ rol_soporte         | v_pedidos_resumen  | id              | SELECT         | NO
+ rol_soporte         | v_pedidos_resumen  | total           | SELECT         | NO
+ rol_soporte         | v_pedidos_resumen  | usuario_id      | SELECT         | NO
+ rol_soporte         | v_usuarios_publico | apellido        | SELECT         | NO
+ rol_soporte         | v_usuarios_publico | id              | SELECT         | NO
+ rol_soporte         | v_usuarios_publico | mail            | SELECT         | NO
+ rol_soporte         | v_usuarios_publico | nombre          | SELECT         | NO
+ rol_soporte         | v_usuarios_publico | rol             | SELECT         | NO
+(88 rows)
+
+    miembro    |       grupo       | admin_option | inherit_option | set_option 
+---------------+-------------------+--------------+----------------+------------
+ app_web       | rol_app_escritura | f            | t              | t
+ app_web       | rol_app_lectura   | f            | t              | t
+ reportes_demo | rol_reportes      | f            | t              | t
+ soporte_demo  | rol_soporte       | f            | t              | t
+(4 rows)
+
+ nspname |       proname        |     propietario     | prosecdef |                  proconfig                  |                                          proacl                                          
+---------+----------------------+---------------------+-----------+---------------------------------------------+------------------------------------------------------------------------------------------
+ public  | fn_autenticar        | rol_auth_owner      | t         | {"search_path=pg_catalog, public, pg_temp"} | {rol_auth_owner=X/rol_auth_owner,app_web=X/rol_auth_owner,soporte_demo=X/rol_auth_owner}
+ public  | fn_resetear_password | rol_auth_owner      | t         | {"search_path=pg_catalog, public, pg_temp"} | {rol_auth_owner=X/rol_auth_owner,rol_soporte=X/rol_auth_owner}
+ public  | sp_crear_pedido      | rol_operacion_owner | t         | {"search_path=pg_catalog, public, pg_temp"} | {rol_operacion_owner=X/rol_operacion_owner,rol_app_escritura=X/rol_operacion_owner}
+(3 rows)
+
+ nspname |        relname        |                                             relacl                                              
+---------+-----------------------+-------------------------------------------------------------------------------------------------
+ public  | categoria_id_seq      | {admin_datos=rwU/admin_datos}
+ public  | detalle_pedido_id_seq | {admin_datos=rwU/admin_datos,rol_operacion_owner=U/admin_datos}
+ public  | pedido_id_seq         | {admin_datos=rwU/admin_datos,rol_app_escritura=U/admin_datos,rol_operacion_owner=U/admin_datos}
+ public  | producto_id_seq       | {admin_datos=rwU/admin_datos}
+ public  | usuario_id_seq        | {admin_datos=rwU/admin_datos}
+(5 rows)
+
+                   Default access privileges
+    Owner    |  Schema  |   Type   |     Access privileges      
+-------------+----------+----------+----------------------------
+ admin_datos | reportes | table    | rol_reportes=r/admin_datos
+ admin_datos |          | function | admin_datos=X/admin_datos
+(2 rows)
+

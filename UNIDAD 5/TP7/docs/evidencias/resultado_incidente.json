@@ -1,0 +1,53 @@
+[
+  {
+    "paso": 1,
+    "estado": "SELECT 0",
+    "filas": 0,
+    "datos": "No se exportan valores de filas"
+  },
+  {
+    "paso": 2,
+    "estado": "SELECT 0",
+    "filas": 0,
+    "datos": "No se exportan valores de filas"
+  },
+  {
+    "paso": 3,
+    "estado": "SELECT 0",
+    "filas": 0,
+    "datos": "No se exportan valores de filas"
+  },
+  {
+    "paso": 4,
+    "estado": "SELECT 1",
+    "filas": 1,
+    "datos": [
+      [
+        1,
+        "USUARIO"
+      ]
+    ]
+  },
+  {
+    "paso": 5,
+    "estado": "SELECT 113",
+    "filas": 113,
+    "datos": "No se exportan valores de filas"
+  },
+  {
+    "paso": 6,
+    "sqlstate": "42501",
+    "error": "permission denied to grant role \"admin_datos\""
+  },
+  {
+    "paso": 7,
+    "estado": "SELECT 1",
+    "filas": 1,
+    "datos": [
+      [
+        "soporte_demo",
+        false
+      ]
+    ]
+  }
+]

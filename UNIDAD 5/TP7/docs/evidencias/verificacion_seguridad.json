@@ -1,0 +1,32 @@
+{
+  "comparaciones_matriz": 4194,
+  "comprobaciones": [
+    "Matriz de tablas y columnas: 4194 comparaciones exactas, sin diferencias",
+    "Atributos administrativos y membresías: coincidencia exacta con el diseño",
+    "Rutinas y secuencias: permisos efectivos exactos para los nueve roles comprobados",
+    "Privilegios futuros: public privado, reportes legible y función privada; prueba revertida",
+    "Catálogo accesible: OK",
+    "Autenticación válida: OK",
+    "SQLi tratado como dato: OK",
+    "Cuenta eliminada no autentica: OK",
+    "Hash privado: rechazado con 42501",
+    "SELECT estrella de usuario privado: rechazado con 42501",
+    "Celular privado: rechazado con 42501",
+    "Columnas de soporte accesibles: OK",
+    "Reseteo de ADMIN impedido: rechazado con 42501",
+    "Clave vacía impedida: rechazado con 22023",
+    "Reseteo de eliminado impedido: rechazado con 42501",
+    "Reseteo de USUARIO válido comprobado y revertido",
+    "Edición directa de total impedida: rechazado con 42501",
+    "Cambio de dueño del pedido impedido: rechazado con 42501",
+    "Edición directa de stock impedida: rechazado con 42501",
+    "DELETE impedido: rechazado con 42501",
+    "TRUNCATE impedido: rechazado con 42501",
+    "DDL impedido: rechazado con 42501",
+    "Escalamiento impedido: rechazado con 42501",
+    "SET ROLE admin impedido: rechazado con 42501",
+    "Usuarios inaccesibles para reportes: rechazado con 42501",
+    "Reporte agregado accesible: OK",
+    "Compra completa con total calculado de 220, sin privilegios directos de inventario; revertida"
+  ]
+}

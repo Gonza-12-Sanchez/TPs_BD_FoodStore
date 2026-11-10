@@ -1,0 +1,14 @@
+2026-10-15 00:39:31.131 UTC [29] sesion=6ad020c3.1d usuario=[unknown] db=[unknown] app=[unknown] origen=192.0.2.10(51180) estado=00000 LOG:  connection received: host=192.0.2.10 port=51180
+2026-10-15 00:39:31.136 UTC [29] sesion=6ad020c3.1d usuario=app_web db=food_store_u5 app=[unknown] origen=192.0.2.10(51180) estado=00000 LOG:  connection authenticated: identity="app_web" method=scram-sha-256 (/workspace/scratch/3970e05b5210/tmp/pg-data/pg_hba.conf:2)
+2026-10-15 00:39:31.136 UTC [29] sesion=6ad020c3.1d usuario=app_web db=food_store_u5 app=[unknown] origen=192.0.2.10(51180) estado=00000 LOG:  connection authorized: user=app_web database=food_store_u5 application_name=FS_U5_B
+2026-10-15 00:39:31.137 UTC [29] sesion=6ad020c3.1d usuario=app_web db=food_store_u5 app=FS_U5_B origen=192.0.2.10(51180) estado=00000 LOG:  statement: BEGIN
+2026-10-15 00:39:31.137 UTC [29] sesion=6ad020c3.1d usuario=app_web db=food_store_u5 app=FS_U5_B origen=192.0.2.10(51180) estado=00000 LOG:  statement: SELECT id,nombre,precio FROM public.v_productos_vigentes ORDER BY id LIMIT 3
+2026-10-15 00:39:31.138 UTC [29] sesion=6ad020c3.1d usuario=app_web db=food_store_u5 app=FS_U5_B origen=192.0.2.10(51180) estado=00000 LOG:  statement: INSERT INTO public.pedido(fecha,forma_pago,usuario_id)
+	VALUES (CURRENT_DATE,'EFECTIVO',1) RETURNING id
+2026-10-15 00:39:31.140 UTC [29] sesion=6ad020c3.1d usuario=app_web db=food_store_u5 app=FS_U5_B origen=192.0.2.10(51180) estado=00000 LOG:  statement: UPDATE public.pedido SET estado='CONFIRMADO'
+	WHERE id=currval('public.pedido_id_seq')
+2026-10-15 00:39:31.141 UTC [29] sesion=6ad020c3.1d usuario=app_web db=food_store_u5 app=FS_U5_B origen=192.0.2.10(51180) estado=00000 LOG:  statement: SELECT id,estado FROM public.pedido WHERE id=currval('public.pedido_id_seq')
+2026-10-15 00:39:31.141 UTC [29] sesion=6ad020c3.1d usuario=app_web db=food_store_u5 app=FS_U5_B origen=192.0.2.10(51180) estado=00000 LOG:  statement: ROLLBACK
+2026-10-15 00:39:31.141 UTC [29] sesion=6ad020c3.1d usuario=app_web db=food_store_u5 app=FS_U5_B origen=192.0.2.10(51180) estado=00000 LOG:  disconnection: session time: 0:00:00.010 user=app_web database=food_store_u5 host=192.0.2.10 port=51180
+2026-10-15 00:39:31.142 UTC [30] sesion=6ad020c3.1e usuario=[unknown] db=[unknown] app=[unknown] origen=192.0.2.10(51188) estado=00000 LOG:  connection received: host=192.0.2.10 port=51188
+2026-10-15 00:39:31.145 UTC [30] sesion=6ad020c3.1e usuario=app_web db=food_store_u5 app=[unknown] origen=192.0.2.10(51188) estado=28P01 FATAL:  password authentication failed for user "app_web"
