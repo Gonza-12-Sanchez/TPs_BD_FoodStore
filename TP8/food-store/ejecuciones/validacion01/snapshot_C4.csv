@@ -1,0 +1,5 @@
+id,nombre,precio_centavos,stock,disponible,eliminado,fecha_copia
+1,Empanada de Carne,16000,50,t,f,2026-11-06T19:03:36.077Z
+2,Empanada de Jamon y Queso,16000,2,t,f,2026-11-06T19:03:36.077Z
+3,Pizza Margherita,80000,20,t,t,2026-11-06T19:03:36.077Z
+4,Pizza Pepperoni,90000,15,t,f,2026-11-06T19:03:36.077Z

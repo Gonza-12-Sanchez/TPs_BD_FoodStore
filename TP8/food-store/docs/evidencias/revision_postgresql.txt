@@ -1,0 +1,38 @@
+BEGIN
+  prueba  | pedidos | total  
+----------+---------+--------
+ H6_antes |       1 | 150.00
+(1 fila)
+
+UPDATE 1
+     prueba      | pedidos | total  
+-----------------+---------+--------
+ H6_mismo_conteo |       1 | 151.00
+(1 fila)
+
+      prueba      | count 
+------------------+-------
+ H6_incoherencias |     1
+(1 fila)
+
+ROLLBACK
+   prueba    | id 
+-------------+----
+ H7_faltante |  2
+ H7_faltante |  5
+ H7_faltante |  4
+ H7_faltante |  3
+(4 filas)
+
+    prueba    | descripcion | subcadena | lexema 
+--------------+-------------+-----------+--------
+ H2_semantica | agridulce   | t         | f
+ H2_semantica | dulces      | t         | t
+ H2_semantica | dulce       | t         | t
+(3 filas)
+
+       prueba        | pedidos | total  
+---------------------+---------+--------
+ H6_despues_ROLLBACK |       1 | 150.00
+(1 fila)
+

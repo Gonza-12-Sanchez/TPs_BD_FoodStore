@@ -1,0 +1,19 @@
+{
+  "database": "foodstore_tp8_20261106_160953",
+  "sqlite": "3.50.4",
+  "casos": "C1-C7 OK",
+  "solicitudes": [
+    [
+      "CONFLICTO",
+      1
+    ],
+    [
+      "RECHAZADO",
+      2
+    ],
+    [
+      "SIMULADO_APROBADO",
+      3
+    ]
+  ]
+}

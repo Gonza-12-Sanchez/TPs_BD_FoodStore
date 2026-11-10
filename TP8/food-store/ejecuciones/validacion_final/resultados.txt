@@ -1,0 +1,42 @@
+Food Store TP8 / 2026-11-06T19:09:53.493083+00:00
+Base aislada: foodstore_tp8_20261106_160953
+PostgreSQL 18.6 on x86_64-windows, compiled by msvc-19.44.35228, 64-bit
+SQLite 3.50.4
+inicial: exportación real PostgreSQL -> CSV -> SQLite; fecha=2026-11-06T19:09:56.613Z; filas=4
+SQL local: [('ROLLBACK', 0)]
+SQL local: [('C1', 1, 'Empanada de Carne', 15000, 50), ('C1', 2, 'Empanada de Jamon y Queso', 16000, 30), ('C1', 3, 'Pizza Margherita', 80000, 20), ('C1', 4, 'Pizza Pepperoni', 90000, 15)]
+C7: CHECK constraint failed: cantidad > 0; filas nuevas=0
+C7: FOREIGN KEY constraint failed; filas nuevas=0
+SQL local: [('C7_items', 1)]
+C1: consulta local; COMMIT=1 borrador+1 item+1 solicitud; ROLLBACK=0 filas persistidas.
+C1 borrador: SIMULADO_APROBADO; PostgreSQL idéntico antes/después de simular: {"pedidos" : 1, "stock" : [[1, 50], [2, 30], [3, 20], [4, 15]], "productos" : [[1, 150.00, 50, true, false], [2, 160.00, 30, true, false], [3, 800.00, 20, true, false], [4, 900.00, 15, true, false]]}
+C2: exportación real PostgreSQL -> CSV -> SQLite; fecha=2026-11-06T19:09:57.131Z; filas=4
+C2 precio modificado: CONFLICTO; PostgreSQL idéntico antes/después de simular: {"pedidos" : 1, "stock" : [[1, 50], [2, 30], [3, 20], [4, 15]], "productos" : [[1, 160.00, 50, true, false], [2, 160.00, 30, true, false], [3, 800.00, 20, true, false], [4, 900.00, 15, true, false]]}
+C2 aceptación y UUID nuevo: SIMULADO_APROBADO; PostgreSQL idéntico antes/después de simular: {"pedidos" : 1, "stock" : [[1, 50], [2, 30], [3, 20], [4, 15]], "productos" : [[1, 160.00, 50, true, false], [2, 160.00, 30, true, false], [3, 800.00, 20, true, false], [4, 900.00, 15, true, false]]}
+C3: exportación real PostgreSQL -> CSV -> SQLite; fecha=2026-11-06T19:09:57.759Z; filas=4
+C3 pide 5 y quedan 2: RECHAZADO; PostgreSQL idéntico antes/después de simular: {"pedidos" : 1, "stock" : [[1, 50], [2, 2], [3, 20], [4, 15]], "productos" : [[1, 160.00, 50, true, false], [2, 160.00, 2, true, false], [3, 800.00, 20, true, false], [4, 900.00, 15, true, false]]}
+C4: exportación real PostgreSQL -> CSV -> SQLite; fecha=2026-11-06T19:09:58.079Z; filas=4
+C4 baja lógica: RECHAZADO; PostgreSQL idéntico antes/después de simular: {"pedidos" : 1, "stock" : [[1, 50], [2, 2], [3, 20], [4, 15]], "productos" : [[1, 160.00, 50, true, false], [2, 160.00, 2, true, false], [3, 800.00, 20, true, true], [4, 900.00, 15, true, false]]}
+C4: fila 3 conservada (lápida), catálogo visible sin producto 3.
+C5: exportación real PostgreSQL -> CSV -> SQLite; fecha=2026-11-06T19:09:58.340Z; filas=4
+C5 sin cambios: SIMULADO_APROBADO; PostgreSQL idéntico antes/después de simular: {"pedidos" : 1, "stock" : [[1, 50], [2, 2], [3, 20], [4, 15]], "productos" : [[1, 160.00, 50, true, false], [2, 160.00, 2, true, false], [3, 800.00, 20, true, true], [4, 900.00, 15, true, false]]}
+Error esperado: UNIQUE constraint failed: cola_sync.solicitud_uuid; filas nuevas=0
+C6 segunda simulación: SIMULADO_APROBADO; PostgreSQL idéntico antes/después de simular: {"pedidos" : 1, "stock" : [[1, 50], [2, 2], [3, 20], [4, 15]], "productos" : [[1, 160.00, 50, true, false], [2, 160.00, 2, true, false], [3, 800.00, 20, true, true], [4, 900.00, 15, true, false]]}
+C6: mismo UUID rechazado; segunda simulación cambia 0 estados y 0 motivos.
+Error esperado: Una solicitud resuelta no se puede modificar; filas nuevas=0
+Error esperado: FOREIGN KEY constraint failed; filas nuevas=0
+Extra: rojo + cambio de precio => RECHAZADO (prioridad correcta).
+Extra: producto ausente de la instantánea => RECHAZADO.
+Extra: borrador vacío => RECHAZADO.
+Integridad SQLite: ok; violaciones FK: 0.
+Control final PostgreSQL:
+1|t
+1|50|t
+2|2|t
+3|20|t
+4|15|t
+1|160.00|t|f
+2|160.00|t|f
+3|800.00|t|t
+4|900.00|t|f
+TODAS LAS PRUEBAS C1-C7 PASARON. SIMULADO_APROBADO NO ES UNA VENTA.

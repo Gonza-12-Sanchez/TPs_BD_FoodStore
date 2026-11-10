@@ -1,0 +1,23 @@
+C:\Users\Maxi\Desktop\UTN\base de dato\TP6\tmp\foodstore_repo\queries.sql
+C:\Users\Maxi\Desktop\UTN\base de dato\TP6\tmp\foodstore_repo\schema.sql
+C:\Users\Maxi\Desktop\UTN\base de dato\TP6\tmp\foodstore_repo\TP3\Parte 1\carga_masiva.sql
+C:\Users\Maxi\Desktop\UTN\base de dato\TP6\tmp\foodstore_repo\TP3\Parte 2\test_consultas.sql
+C:\Users\Maxi\Desktop\UTN\base de dato\TP6\tmp\foodstore_repo\TP3\Parte 5\competencia.sql
+C:\Users\Maxi\Desktop\UTN\base de dato\TP6\tmp\foodstore_repo\TP4\Parte 1\consultas_analiticas.sql
+C:\Users\Maxi\Desktop\UTN\base de dato\TP6\tmp\foodstore_repo\TP5\4-A\indices.sql
+C:\Users\Maxi\Desktop\UTN\base de dato\TP6\tmp\foodstore_repo\TP5\4-B\views.sql
+C:\Users\Maxi\Desktop\UTN\base de dato\TP6\output\scripts\backup_foodstore.ps1
+C:\Users\Maxi\Desktop\UTN\base de dato\TP6\output\scripts\health_check.sql
+C:\Users\Maxi\Desktop\UTN\base de dato\TP6\output\scripts\maintenance.sql
+C:\Users\Maxi\Desktop\UTN\base de dato\TP6\output\scripts\restore_test.ps1
+C:\Users\Maxi\Desktop\UTN\base de dato\TP6\output\scripts\validate.sql
+C:\Users\Maxi\Desktop\UTN\base de dato\tp7\consultas_mongodb.js
+C:\Users\Maxi\Desktop\UTN\base de dato\tp7\consultas_postgresql.sql
+C:\Users\Maxi\Desktop\UTN\base de dato\tp7\mongoose_demo.js
+C:\Users\Maxi\Desktop\UTN\base de dato\tp8\food-store\movil\cargar_cache.sql
+C:\Users\Maxi\Desktop\UTN\base de dato\tp8\food-store\movil\pruebas_sqlite.sql
+C:\Users\Maxi\Desktop\UTN\base de dato\tp8\food-store\movil\schema_sqlite.sql
+C:\Users\Maxi\Desktop\UTN\base de dato\tp8\food-store\movil\semaforo.sql
+C:\Users\Maxi\Desktop\UTN\base de dato\tp8\food-store\docs\kiro\design.md
+C:\Users\Maxi\Desktop\UTN\base de dato\tp8\food-store\docs\kiro\requirements.md
+C:\Users\Maxi\Desktop\UTN\base de dato\tp8\food-store\docs\kiro\tasks.md

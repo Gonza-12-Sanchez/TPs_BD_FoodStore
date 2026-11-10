@@ -1,0 +1,1043 @@
+--- ARCHIVO: TP6\tmp\foodstore_repo\queries.sql ---
+--                                  HISTORIAS DE USUARIO                              --
+----  Épica 1 — Gestión de Categorías
+-- Listar categorías
+SELECT id, nombre, descripcion
+FROM   categoria
+WHERE  eliminado = FALSE
+ORDER  BY id;
+
+-- Crear categoría
+INSERT INTO categoria(nombre, descripcion)
+VALUES ('Empanadas', 'Variedad de empanadas')
+RETURNING id;
+
+-- Editar categoría
+UPDATE categoria
+SET    nombre = 'Pizzas y Empanadas', descripcion = 'Catálogo ampliado'
+WHERE  id = 1 AND eliminado = FALSE;   -- 0 filas si no existe/eliminada
+
+-- Eliminar categoría (baja lógica)
+UPDATE categoria
+SET    eliminado = TRUE
+WHERE  id = 2 AND eliminado = FALSE;
+
+---- Épica 2 — Gestión de Productos
+-- Listar productos
+SELECT p.id, p.nombre, p.precio, p.stock, c.nombre AS categoria
+FROM   producto p
+JOIN   categoria c ON c.id = p.categoria_id
+WHERE  p.eliminado = FALSE
+-- AND  p.categoria_id = 1            -- filtro opcional
+ORDER  BY p.id;
+
+-- Crear producto
+INSERT INTO producto(nombre, descripcion, precio, stock,
+                     imagen, disponible, categoria_id)
+SELECT 'Fugazzeta', 'Pizza de cebolla', 1800.00, 10, NULL, TRUE, c.id
+FROM   categoria c
+WHERE  c.id = 1 AND c.eliminado = FALSE   -- garantiza categoría vigente
+RETURNING id;
+
+-- Editar producto
+UPDATE producto
+SET    precio = COALESCE(2000.00, precio),   -- NULL conserva el valor
+       stock  = COALESCE(NULL,    stock)
+WHERE  id = 1 AND eliminado = FALSE;
+
+-- Eliminar producto (baja lógica)
+UPDATE producto
+SET    eliminado = TRUE
+WHERE  id = 1 AND eliminado = FALSE;
+
+---- Épica 3 — Gestión de Usuarios
+-- Listar usuarios
+SELECT id, nombre, apellido, mail, rol
+FROM   usuario
+WHERE  eliminado = FALSE
+ORDER  BY id;
+
+-- Crear usuario
+INSERT INTO usuario(nombre, apellido, mail, celular, contrasena)
+VALUES ('Juan', 'Pérez', 'usuario@example.invalid', '2611234567', 'hash')
+RETURNING id;   -- UNIQUE(mail) lanza error si el mail ya existe
+
+-- Editar usuario
+UPDATE usuario
+SET    celular = '2617654321'
+WHERE  id = 1 AND eliminado = FALSE;
+
+-- Eliminar usuario (baja lógica)
+UPDATE usuario
+SET    eliminado = TRUE
+WHERE  id = 1 AND eliminado = FALSE;
+
+---- Épica 4 — Gestión de Pedidos y Detalles
+-- Listar pedidos (versión heredada Semana 3-4 - consulta directa sin depender de vistas/procedures de Semana 6)
+explain analyze 
+SELECT ped.id, u.nombre || ' ' || u.apellido AS usuario, ped.fecha, ped.estado, ped.forma_pago, ped.total
+FROM   pedido ped
+JOIN   usuario u ON u.id = ped.usuario_id
+WHERE  ped.eliminado = FALSE AND u.eliminado = FALSE
+-- WHERE u.nombre || ' ' || u.apellido = 'Ana Garis'  -- filtro opcional
+ORDER  BY ped.id;
+
+-- COMENTADO - Requiere objeto de Semana 6 (no existe en schema.sql base Semana 3):
+-- SELECT id, usuario, fecha, estado, forma_pago, total
+-- FROM   v_pedidos_resumen
+-- WHERE usuario = 'Ana Garis'
+-- ORDER  BY id;
+
+-- Crear pedido con detalles (versión heredada - INSERT directo, sin procedure)
+-- NOTA: El procedure sp_crear_pedido se crea en Semana 6, no existe aún en TP5 punto de partida.
+-- Para Semana 3-4 se usa inserción manual en transacción:
+-- BEGIN;
+--   INSERT INTO pedido(usuario_id, forma_pago, estado, total) VALUES (1, 'EFECTIVO', 'PENDIENTE', 0) RETURNING id;
+--   INSERT INTO detalle_pedido(pedido_id, producto_id, cantidad, precio_unitario, subtotal) VALUES (currval('pedido_id_seq'), 1, 2, 150, 300);
+-- COMMIT;
+
+-- COMENTADO - Requiere procedure de Semana 6:
+-- CALL sp_crear_pedido(
+--      1,                 -- usuario_id (debe estar vigente)
+--      'EFECTIVO',
+--      '[{"producto_id":1,"cantidad":2},
+--        {"producto_id":2,"cantidad":1}]'::jsonb);
+
+-- Actualizar estado / forma de pago
+UPDATE pedido
+SET    estado = 'CONFIRMADO', forma_pago = 'TARJETA'
+WHERE  id = 1 AND eliminado = FALSE;
+
+-- Eliminar pedido (baja lógica)
+BEGIN;
+  UPDATE detalle_pedido SET eliminado = TRUE WHERE pedido_id = 1;
+  UPDATE pedido         SET eliminado = TRUE WHERE id = 1;
+COMMIT;
+
+--                                  Consultas analíticas (para profundizar)                         --
+-- A) Top 5 productos más vendidos (por cantidad)
+explain analyze
+SELECT pr.id, pr.nombre, SUM(dp.cantidad) AS unidades
+FROM   detalle_pedido dp
+JOIN   producto pr ON pr.id = dp.producto_id
+WHERE  dp.eliminado = FALSE
+GROUP  BY pr.id, pr.nombre
+ORDER  BY unidades DESC
+LIMIT  5;
+ 
+-- B) Facturación por categoría y por mes
+explain analyze 
+SELECT c.nombre AS categoria,
+       date_trunc('month', ped.fecha) AS mes,
+       SUM(dp.subtotal) AS facturado
+FROM   detalle_pedido dp
+JOIN   pedido   ped ON ped.id = dp.pedido_id AND ped.eliminado = FALSE
+JOIN   producto pr  ON pr.id  = dp.producto_id
+JOIN   categoria c  ON c.id   = pr.categoria_id
+WHERE  dp.eliminado = FALSE
+GROUP  BY c.nombre, date_trunc('month', ped.fecha)
+ORDER  BY mes, facturado DESC;
+ 
+-- C) Ranking de usuarios por gasto acumulado (función de ventana)
+SELECT u.id, u.nombre || ' ' || u.apellido AS usuario,
+       SUM(ped.total) AS gasto,
+       RANK() OVER (ORDER BY SUM(ped.total) DESC) AS puesto
+FROM   pedido ped
+JOIN   usuario u ON u.id = ped.usuario_id
+WHERE  ped.eliminado = FALSE
+GROUP  BY u.id, u.nombre, u.apellido
+ORDER  BY puesto;
+ 
+-- D) Pedidos cuyo total supera el promedio general (subconsulta)
+SELECT id, total
+FROM   pedido
+WHERE  eliminado = FALSE
+  AND  total > (SELECT AVG(total) FROM pedido WHERE eliminado = FALSE)
+ORDER  BY total DESC;
+ 
+-- E) Productos sin ventas (LEFT JOIN + IS NULL)
+SELECT pr.id, pr.nombre
+FROM   producto pr
+LEFT   JOIN detalle_pedido dp
+       ON dp.producto_id = pr.id AND dp.eliminado = FALSE
+WHERE  pr.eliminado = FALSE
+  AND  dp.id IS NULL
+ORDER  BY pr.id;
+
+--- ARCHIVO: TP6\tmp\foodstore_repo\schema.sql ---
+--Creacion de una base de datos
+create database copia_food_store;
+
+-- Tipos enumerados
+CREATE TYPE rol           AS ENUM ('ADMIN','USUARIO');
+CREATE TYPE estado_pedido AS ENUM ('PENDIENTE','CONFIRMADO',
+                                   'TERMINADO','CANCELADO');
+CREATE TYPE forma_pago    AS ENUM ('TARJETA','TRANSFERENCIA','EFECTIVO');
+ 
+-- Creacion de tablas con distintas validaciones
+CREATE TABLE categoria (
+    id          BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    nombre      VARCHAR(80)  NOT NULL UNIQUE,
+    descripcion VARCHAR(255),
+    eliminado   BOOLEAN      NOT NULL DEFAULT FALSE,
+    created_at  TIMESTAMPTZ  NOT NULL DEFAULT now()
+);
+ 
+CREATE TABLE producto (
+    id           BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    nombre       VARCHAR(120) NOT NULL,
+    precio       NUMERIC(10,2) NOT NULL CHECK (precio >= 0),
+    descripcion  VARCHAR(255),
+    stock        INTEGER      NOT NULL DEFAULT 0 CHECK (stock >= 0),
+    imagen       VARCHAR(255),
+    disponible   BOOLEAN      NOT NULL DEFAULT TRUE,
+    categoria_id BIGINT       NOT NULL REFERENCES categoria(id),
+    eliminado    BOOLEAN      NOT NULL DEFAULT FALSE,
+    created_at   TIMESTAMPTZ  NOT NULL DEFAULT now()
+);
+ 
+CREATE TABLE usuario (
+    id          BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    nombre      VARCHAR(80)  NOT NULL,
+    apellido    VARCHAR(80)  NOT NULL,
+    mail        VARCHAR(120) NOT NULL UNIQUE,
+    celular     VARCHAR(30),
+    contrasena  VARCHAR(255) NOT NULL,
+    rol         rol          NOT NULL DEFAULT 'USUARIO',
+    eliminado   BOOLEAN      NOT NULL DEFAULT FALSE,
+    created_at  TIMESTAMPTZ  NOT NULL DEFAULT now()
+);
+ 
+CREATE TABLE pedido (
+    id         BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    fecha      DATE          NOT NULL DEFAULT CURRENT_DATE,
+    estado     estado_pedido NOT NULL DEFAULT 'PENDIENTE',
+    total      NUMERIC(12,2) NOT NULL DEFAULT 0 CHECK (total >= 0),
+    forma_pago forma_pago    NOT NULL,
+    usuario_id BIGINT        NOT NULL REFERENCES usuario(id),
+    eliminado  BOOLEAN       NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMPTZ   NOT NULL DEFAULT now()
+);
+    
+CREATE TABLE detalle_pedido (
+    id          BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    cantidad       INTEGER       NOT NULL CHECK (cantidad > 0),
+    precio_unitario NUMERIC(10,2) NOT NULL CHECK (precio_unitario >= 0),
+    subtotal       NUMERIC(12,2) NOT NULL CHECK (subtotal >= 0),
+    pedido_id      BIGINT        NOT NULL REFERENCES pedido(id)
+                                 ON DELETE RESTRICT,
+    producto_id    BIGINT        NOT NULL REFERENCES producto(id),
+    eliminado      BOOLEAN       NOT NULL DEFAULT FALSE,
+    created_at     TIMESTAMPTZ   NOT NULL DEFAULT now(),
+    UNIQUE (pedido_id, producto_id)
+);
+
+-- Creacion de indices
+create index idx_producto_categoria on producto(categoria_id);
+create index idx_pedido_usuario on pedido(usuario_id);
+create index idx_detalle_pedido on detalle_pedido(pedido_id);
+create index idx_pedido_estado_fecha on pedido(estado,fecha);
+create index idx_producto_desc on producto using GIN (to_tsvector('spanish', descripcion));
+create index idx_detalle_producto on detalle_pedido(producto_id);
+create index idx_producto_nombre_vig on producto(nombre) where eliminado = FALSE;
+
+
+--- ARCHIVO: TP6\tmp\foodstore_repo\TP3\Parte 1\carga_masiva.sql ---
+-- TP3 - Carga masiva simple
+-- 50.000 productos parejos en categorias existentes (precio 500-5000, stock 0-200)
+-- 20.000 usuarios + 200.000 pedidos con 1 detalle c/u (200.000 detalles)
+-- Solo toca producto, usuario, pedido, detalle_pedido. No modifica categoria.
+-- Requiere schema.sql + data.sql ya ejecutados. Usar en copia_trabajo:
+--   BEGIN; \i TP3/carga_masiva.sql; -- verificar; ROLLBACK o COMMIT;
+
+BEGIN;
+-- 1) 50.000 productos
+INSERT INTO producto (nombre, precio, descripcion, stock, categoria_id)
+SELECT
+    'Producto ' || lpad(gs::text, 5, '0')  AS nombre,
+    (500 + random() * 4500)::numeric(10,2) AS precio,
+    'Producto generado ' || gs             AS descripcion,
+    floor(random() * 201)::int             AS stock,
+    ((gs - 1) % 4 + 1)::bigint            AS categoria_id
+FROM generate_series(1, 50000) AS gs;
+
+-- 2) 20.000 usuarios
+INSERT INTO usuario (nombre, apellido, mail, celular, contrasena, rol)
+SELECT
+    'Nombre' || gs                                     AS nombre,
+    'Apellido' || gs                                   AS apellido,
+    'u' || lpad(gs::text, 6, '0') || '@foodstore.test' AS mail,
+    '11' || lpad((floor(random()*90000000)+10000000)::text, 8, '0') AS celular,
+    'hash_' || gs                                      AS contrasena,
+    (CASE WHEN random() < 0.05 THEN 'ADMIN'::rol ELSE 'USUARIO'::rol END) AS rol
+FROM generate_series(1, 20000) AS gs;
+
+-- 3) 200.000 pedidos - usuario_id de ids reales (evita error FK 23503 por huecos de identity)
+WITH user_ids AS (SELECT array_agg(id) AS ids FROM usuario)
+INSERT INTO pedido (fecha, estado, total, forma_pago, usuario_id)
+SELECT
+    (CURRENT_DATE - (floor(random()*730))::int) AS fecha,
+    (ARRAY['PENDIENTE','CONFIRMADO','TERMINADO','CANCELADO'])[1+floor(random()*4)::int]::estado_pedido,
+    0,
+    (ARRAY['TARJETA','TRANSFERENCIA','EFECTIVO'])[1+floor(random()*3)::int]::forma_pago,
+    ids[1 + floor(random()*array_length(ids,1))::int]
+FROM generate_series(1, 200000) AS gs
+CROSS JOIN user_ids;
+
+
+-- 4) 200.000 detalles - 1 por pedido, producto tomado de ids reales
+WITH prod_ids AS (SELECT array_agg(id) AS ids FROM producto),
+     nuevos AS (SELECT id AS pedido_id FROM pedido ORDER BY id DESC LIMIT 200000)
+INSERT INTO detalle_pedido (cantidad, precio_unitario, subtotal, pedido_id, producto_id)
+SELECT 
+    gen.cantidad,
+    p.precio AS precio_unitario,
+    (gen.cantidad * p.precio)::numeric(12,2) AS subtotal,
+    np.pedido_id,
+    p.id
+FROM nuevos np
+CROSS JOIN prod_ids
+CROSS JOIN LATERAL (
+    -- Al poner np.pedido_id en el WHERE obligamos al motor a recalcular por cada fila
+    SELECT 
+        (1 + floor(random()*5))::int AS cantidad,
+        prod_ids.ids[1 + floor(random()*array_length(prod_ids.ids,1))::int] AS rand_id
+    WHERE np.pedido_id IS NOT NULL 
+) gen
+JOIN producto p ON p.id = gen.rand_id;
+
+-- 5) Recalcular totales de los 200k pedidos nuevos
+UPDATE pedido p SET total = s.suma
+FROM (
+    SELECT pedido_id, SUM(subtotal)::numeric(12,2) AS suma
+    FROM detalle_pedido
+    WHERE pedido_id > 5
+    GROUP BY pedido_id
+) s
+WHERE p.id = s.pedido_id;
+
+COMMIT;
+
+-- Verificacion carga masiva correctamente
+SELECT 'producto' AS tabla, count(*) FROM producto
+UNION ALL SELECT 'usuario', count(*) FROM usuario
+UNION ALL SELECT 'pedido', count(*) FROM pedido
+UNION ALL SELECT 'detalle_pedido', count(*) FROM detalle_pedido;
+
+--- ARCHIVO: TP6\tmp\foodstore_repo\TP3\Parte 2\test_consultas.sql ---
+-- Consulta 1
+EXPLAIN ANALYZE
+SELECT u.nombre, u.apellido, u.mail, SUM(p.total) as total_gastado
+FROM usuario u
+JOIN pedido p ON u.id = p.usuario_id
+WHERE p.fecha >= (CURRENT_DATE - INTERVAL '30 days')
+  AND p.estado = 'TERMINADO'
+GROUP BY u.id, u.nombre, u.apellido, u.mail
+ORDER BY total_gastado DESC
+LIMIT 50;
+
+-- Consulta 2 sin optimizar
+EXPLAIN ANALYZE
+SELECT p.nombre, p.precio, c.nombre AS categoria
+FROM producto p
+JOIN categoria c ON p.categoria_id = c.id
+WHERE p.descripcion ILIKE '%dulce%'
+  AND p.disponible = TRUE
+ORDER BY p.precio ASC;
+
+-- Consulta 2 optimizada
+EXPLAIN ANALYZE
+SELECT p.nombre, p.precio, c.nombre AS categoria
+FROM producto p
+JOIN categoria c ON p.categoria_id = c.id
+WHERE to_tsvector('spanish', p.descripcion) @@ to_tsquery('spanish', 'dulce')
+  AND p.disponible = TRUE
+ORDER BY p.precio ASC;
+
+-- Consulta 3
+EXPLAIN ANALYZE
+SELECT p.nombre, SUM(dp.cantidad) AS unidades_vendidas, SUM(dp.subtotal) AS recaudacion_total
+FROM producto p
+JOIN detalle_pedido dp ON p.id = dp.producto_id
+GROUP BY p.id, p.nombre
+ORDER BY recaudacion_total DESC
+LIMIT 10;
+--- ARCHIVO: TP6\tmp\foodstore_repo\TP3\Parte 5\competencia.sql ---
+-- Parte 5: Competencia de optimización
+
+-- 1. Consulta original (Lenta)
+EXPLAIN ANALYZE
+SELECT p.id, p.nombre, p.precio, p.stock
+FROM producto p
+WHERE p.categoria_id = 2
+  AND p.precio BETWEEN 1000 AND 3000
+  AND p.eliminado = FALSE
+ORDER BY p.precio ASC;
+
+-- 2. Índice ganador propuesto
+CREATE INDEX idx_producto_competencia 
+ON producto (categoria_id, precio ASC) 
+INCLUDE (nombre, stock)
+WHERE eliminado = FALSE;
+
+-- 3. Consulta optimizada (Index Only Scan)
+EXPLAIN ANALYZE
+SELECT p.id, p.nombre, p.precio, p.stock
+FROM producto p
+WHERE p.categoria_id = 2
+  AND p.precio BETWEEN 1000 AND 3000
+  AND p.eliminado = FALSE
+ORDER BY p.precio ASC;
+
+--- ARCHIVO: TP6\tmp\foodstore_repo\TP4\Parte 1\consultas_analiticas.sql ---
+-- 1) Facturación por categoría y por mes
+EXPLAIN ANALYZE
+SELECT c.nombre AS categoria,
+       date_trunc('month', ped.fecha)::date AS mes,
+       SUM(dp.subtotal) AS facturado
+FROM detalle_pedido dp
+JOIN pedido ped ON ped.id=dp.pedido_id
+JOIN producto pr ON pr.id=dp.producto_id
+JOIN categoria c ON c.id=pr.categoria_id
+WHERE ped.estado='TERMINADO'
+  AND ped.eliminado=FALSE AND dp.eliminado=FALSE
+  AND pr.eliminado=FALSE AND c.eliminado=FALSE
+GROUP BY c.id, c.nombre, date_trunc('month', ped.fecha)
+ORDER BY mes, facturado DESC;
+
+-- Consulta Optimizada IA
+EXPLAIN ANALYZE
+WITH ventas_mensuales AS (
+    -- Pre-agregamos el volumen masivo primero
+    SELECT dp.producto_id,
+           date_trunc('month', ped.fecha)::date AS mes,
+           SUM(dp.subtotal) AS total_prod
+    FROM pedido ped
+    JOIN detalle_pedido dp ON ped.id = dp.pedido_id
+    WHERE ped.estado = 'TERMINADO'
+      AND ped.eliminado = FALSE
+      AND dp.eliminado = FALSE
+    GROUP BY dp.producto_id, date_trunc('month', ped.fecha)
+)
+-- Luego cruzamos el resultado ya achicado con las categorías
+SELECT c.nombre AS categoria,
+       v.mes,
+       SUM(v.total_prod) AS facturado
+FROM ventas_mensuales v
+JOIN producto pr ON v.producto_id = pr.id
+JOIN categoria c ON pr.categoria_id = c.id
+WHERE pr.eliminado = FALSE 
+  AND c.eliminado = FALSE
+GROUP BY c.id, c.nombre, v.mes
+ORDER BY v.mes, facturado DESC;
+
+-- 2) Detalles de compra por usuario
+EXPLAIN ANALYZE
+SELECT u.nombre || ' ' ||
+ u.apellido AS usuario,
+       ped.id AS pedido_id,
+       ped.fecha,
+       ped.estado,
+       dp.producto_id,
+       dp.cantidad,
+       dp.precio_unitario,
+       dp.subtotal
+FROM   pedido ped
+JOIN   usuario u ON u.id = ped.usuario_id
+JOIN   detalle_pedido dp ON dp.pedido_id = ped.id
+WHERE  ped.eliminado = FALSE
+  AND  u.eliminado = FALSE
+  AND  dp.eliminado = FALSE
+ORDER  BY ped.fecha DESC, ped.id;
+
+-- Consulta Optimizada IA (Creacion de un indice)
+CREATE INDEX idx_pedido_fecha_desc ON pedido (fecha DESC, id);
+
+
+--- ARCHIVO: TP6\tmp\foodstore_repo\TP5\4-A\indices.sql ---
+-- Q1 — Listar pedidos (Épica 4) — Frecuencia muy alta
+-- Spec: WHERE ped.eliminado=FALSE ORDER BY ped.id
+-- Justificación: B-tree parcial mantiene orden por id solo para vigentes, evita el Filter después del Index Scan sobre la PK
+CREATE INDEX idx_pedido_vig_id ON pedido(id) WHERE eliminado = FALSE;
+
+-- Q2 — Top 5 productos más vendidos (Analítica A) — Reporte diario
+-- Spec: JOIN por producto_id con filtro eliminado
+-- Justificación: B-tree parcial sobre producto_id solo para filas vigentes. Reemplaza el Seq Scan de 200k en detalle_pedido
+CREATE INDEX idx_detalle_producto_vig ON detalle_pedido(producto_id) WHERE eliminado = FALSE;
+
+-- Q3 — Facturación por categoría y mes (Analítica B) — Cierre mensual
+-- Spec: GROUP BY date_trunc(fecha) con filtro eliminado
+-- Justificación: B-tree parcial sobre fecha para el GROUP BY temporal, solo vigentes. Reduce el Parallel Seq Scan de pedido
+CREATE INDEX idx_pedido_fecha_vig ON pedido(fecha) WHERE eliminado = FALSE;
+
+-- Índice DESCARTADO por sobreindexación (no crear)
+-- Propuesta: CREATE INDEX idx_pedido_estado ON pedido(estado);
+-- Motivo: baja cardinalidad (4 estados), sin condición parcial, redundante con idx_pedido_estado_fecha(estado,fecha) ya existente en schema.sql. No cambia ningún plan de Q1-Q3.
+
+BEGIN;
+INSERT INTO detalle_pedido (cantidad, precio_unitario, subtotal, pedido_id, producto_id)
+SELECT 1, 100, 100, id, 1 FROM pedido ORDER BY id DESC LIMIT 500;
+ROLLBACK;
+--- ARCHIVO: TP6\tmp\foodstore_repo\TP5\4-B\views.sql ---
+-- V1 — Productos vigentes con su categoría
+-- Spec: vista_productos_vigentes.md
+CREATE OR REPLACE VIEW v_productos_vigentes AS
+SELECT p.id,
+       p.nombre,
+       p.precio,
+       p.stock,
+       p.disponible,
+       p.categoria_id,
+       c.nombre AS categoria_nombre
+FROM producto p
+JOIN categoria c ON c.id = p.categoria_id
+WHERE p.eliminado = FALSE
+  AND c.eliminado = FALSE
+  AND p.disponible = TRUE;
+
+-- V2 — Pedidos con datos del usuario (vista con criterio de seguridad)
+-- Spec: vista_pedidos_con_usuario.md
+-- Oculta: usuario.contrasena (y celular) para poder dar GRANT SELECT sin exponer tabla base
+CREATE OR REPLACE VIEW v_pedidos_con_usuario AS
+SELECT ped.id,
+       ped.fecha,
+       ped.estado,
+       ped.total,
+       ped.forma_pago,
+       ped.usuario_id,
+       u.nombre AS usuario_nombre,
+       u.apellido AS usuario_apellido,
+       u.mail AS usuario_mail,
+       u.rol AS usuario_rol
+FROM pedido ped
+JOIN usuario u ON u.id = ped.usuario_id
+WHERE ped.eliminado = FALSE
+  AND u.eliminado = FALSE;
+
+-- V3 — Detalle de pedido con nombre del producto
+-- Spec: vista_detalle_con_producto.md
+CREATE OR REPLACE VIEW v_detalle_con_producto AS
+SELECT dp.id,
+       dp.pedido_id,
+       dp.producto_id,
+       pr.nombre AS producto_nombre,
+       dp.cantidad,
+       dp.precio_unitario,
+       dp.subtotal
+FROM detalle_pedido dp
+JOIN producto pr ON pr.id = dp.producto_id
+WHERE dp.eliminado = FALSE
+  AND pr.eliminado = FALSE;
+
+
+
+-- V1 - Productos vigentes
+(SELECT * FROM v_productos_vigentes EXCEPT SELECT p.id, p.nombre, p.precio, p.stock, p.disponible, p.categoria_id, c.nombre FROM producto p JOIN categoria c ON c.id=p.categoria_id WHERE p.eliminado=FALSE AND c.eliminado=FALSE AND p.disponible=TRUE)
+UNION ALL
+(SELECT p.id, p.nombre, p.precio, p.stock, p.disponible, p.categoria_id, c.nombre FROM producto p JOIN categoria c ON c.id=p.categoria_id WHERE p.eliminado=FALSE AND c.eliminado=FALSE AND p.disponible=TRUE EXCEPT SELECT * FROM v_productos_vigentes);
+-- debe dar 0 filas
+
+-- V2 - Pedidos con usuario (la de seguridad, sin contrasena)
+(SELECT * FROM v_pedidos_con_usuario EXCEPT SELECT ped.id, ped.fecha, ped.estado, ped.total, ped.forma_pago, ped.usuario_id, u.nombre, u.apellido, u.mail, u.rol FROM pedido ped JOIN usuario u ON u.id=ped.usuario_id WHERE ped.eliminado=FALSE AND u.eliminado=FALSE)
+UNION ALL
+(SELECT ped.id, ped.fecha, ped.estado, ped.total, ped.forma_pago, ped.usuario_id, u.nombre, u.apellido, u.mail, u.rol FROM pedido ped JOIN usuario u ON u.id=ped.usuario_id WHERE ped.eliminado=FALSE AND u.eliminado=FALSE EXCEPT SELECT * FROM v_pedidos_con_usuario);
+-- debe dar 0 filas. Además verifica: \d v_pedidos_con_usuario no debe mostrar contrasena
+
+-- V3 - Detalle con producto
+(SELECT * FROM v_detalle_con_producto EXCEPT SELECT dp.id, dp.pedido_id, dp.producto_id, pr.nombre, dp.cantidad, dp.precio_unitario, dp.subtotal FROM detalle_pedido dp JOIN producto pr ON pr.id=dp.producto_id WHERE dp.eliminado=FALSE AND pr.eliminado=FALSE)
+UNION ALL
+(SELECT dp.id, dp.pedido_id, dp.producto_id, pr.nombre, dp.cantidad, dp.precio_unitario, dp.subtotal FROM detalle_pedido dp JOIN producto pr ON pr.id=dp.producto_id WHERE dp.eliminado=FALSE AND pr.eliminado=FALSE EXCEPT SELECT * FROM v_detalle_con_producto);
+-- debe dar 0 filas
+
+--- ARCHIVO: TP6\output\scripts\backup_foodstore.ps1 ---
+param([string]$Server='localhost', [int]$Port=5432,
+      [string]$DbUser='postgres')
+$ErrorActionPreference='Stop'
+$c=@('-h',$Server,'-p',"$Port",'-U',$DbUser,'-w')
+$stamp=Get-Date -Format 'yyyyMMdd_HHmmss_fff'
+$root=Join-Path $PSScriptRoot 'backups'
+$logs=Join-Path $PSScriptRoot 'logs'
+New-Item -ItemType Directory -Force $root,$logs | Out-Null
+$dump=Join-Path $root "foodstore_$stamp.dump"
+$log=Join-Path $logs "backup_$stamp.log"
+$start=Get-Date
+try {
+  "INICIO $($start.ToString('o'))" | Set-Content $log
+  # Sin escrituras desde el conteo hasta terminar pg_dump.
+  $baseline=& psql @c -X -A -t -v ON_ERROR_STOP=1 -d foodstore `
+    -f (Join-Path $PSScriptRoot 'validate.sql') 2>> $log
+  if ($LASTEXITCODE -ne 0) { throw 'Fallo baseline' }
+  $baseline | Set-Content "$dump.baseline.txt"
+  & pg_dump @c -d foodstore -Fc -f "$dump.partial" 2>> $log
+  if ($LASTEXITCODE -ne 0) { throw 'Fallo pg_dump' }
+  if ((Get-Item "$dump.partial").Length -eq 0) { throw 'Dump vacio' }
+  & pg_restore --list "$dump.partial" >> $log 2>&1
+  if ($LASTEXITCODE -ne 0) { throw 'Archivo ilegible' }
+  Move-Item -LiteralPath "$dump.partial" -Destination $dump
+  $start.ToString('o') | Set-Content "$dump.started.txt"
+  "OK $(Get-Date -Format o) bytes=$((Get-Item $dump).Length)" |
+    Add-Content $log
+  exit 0
+} catch {
+  "ERROR: $_" | Add-Content $log
+  exit 1
+}
+
+--- ARCHIVO: TP6\output\scripts\health_check.sql ---
+SELECT current_database() AS base,
+       pg_size_pretty(pg_database_size(current_database())) AS tamano;
+SELECT numbackends, xact_commit, xact_rollback
+FROM pg_stat_database WHERE datname = current_database();
+SELECT schemaname, relname, n_live_tup, n_dead_tup,
+       last_autovacuum, last_autoanalyze, last_analyze
+FROM pg_stat_user_tables ORDER BY n_dead_tup DESC;
+SELECT pid, state, now() - query_start AS duracion, query
+FROM pg_stat_activity
+WHERE datname = current_database() AND state <> 'idle'
+  AND pid <> pg_backend_pid();
+
+--- ARCHIVO: TP6\output\scripts\maintenance.sql ---
+-- Ejecutar con psql -X -v ON_ERROR_STOP=1 -f maintenance.sql
+-- Fuera de BEGIN: VACUUM no admite bloque transaccional.
+SHOW autovacuum;
+SELECT relname, n_live_tup, n_dead_tup, n_mod_since_analyze,
+       last_autovacuum, last_autoanalyze, last_vacuum, last_analyze
+FROM pg_stat_user_tables ORDER BY n_dead_tup DESC;
+-- Criterio local de laboratorio: limpiar si hay >= 50 muertas
+-- y superan 10% de las vivas. Revisar semanalmente el umbral.
+SELECT format('VACUUM (ANALYZE) %I.%I;', schemaname, relname)
+FROM pg_stat_user_tables
+WHERE n_dead_tup >= 50
+  AND n_dead_tup > 0.10 * greatest(n_live_tup, 1)
+\gexec
+-- Estadisticas sin analizar o cambios >= 10%: ANALYZE puntual.
+SELECT format('ANALYZE %I.%I;', schemaname, relname)
+FROM pg_stat_user_tables
+WHERE (last_analyze IS NULL AND last_autoanalyze IS NULL)
+   OR n_mod_since_analyze > 0.10 * greatest(n_live_tup, 1)
+\gexec
+
+--- ARCHIVO: TP6\output\scripts\restore_test.ps1 ---
+param([string]$Server='localhost', [int]$Port=5432,
+      [string]$DbUser='postgres')
+$ErrorActionPreference='Stop'
+$c=@('-h',$Server,'-p',"$Port",'-U',$DbUser,'-w')
+$logs=Join-Path $PSScriptRoot 'logs'
+New-Item -ItemType Directory -Force $logs | Out-Null
+$log=Join-Path $logs ('restore_'+(Get-Date -Format yyyyMMdd_HHmmss)+'.log')
+try {
+  $dump=Get-ChildItem (Join-Path $PSScriptRoot 'backups') `
+    -Filter 'foodstore_*.dump' | Sort-Object Name -Descending |
+    Select-Object -First 1
+  if (!$dump) { throw 'No hay respaldo terminado' }
+  $expected=Get-Content "$($dump.FullName).baseline.txt"
+  $backupStart=[DateTimeOffset]::Parse(
+    (Get-Content "$($dump.FullName).started.txt"))
+  $incident=[DateTimeOffset]::Now
+  $watch=[Diagnostics.Stopwatch]::StartNew()
+  # Falla si la base ya existe. Nunca elimina bases.
+  & createdb @c -T template0 foodstore_restore_test 2>> $log
+  if ($LASTEXITCODE -ne 0) { throw 'Fallo createdb' }
+  & pg_restore @c --exit-on-error --no-owner --no-privileges `
+    -d foodstore_restore_test $dump.FullName 2>> $log
+  if ($LASTEXITCODE -ne 0) { throw 'Fallo pg_restore' }
+  $actual=@(& psql @c -X -A -t -v ON_ERROR_STOP=1 `
+    -d foodstore_restore_test `
+    -f (Join-Path $PSScriptRoot 'validate.sql') 2>> $log)
+  if ($LASTEXITCODE -ne 0) { throw 'Fallo validacion SQL' }
+  if (@(Compare-Object $expected $actual).Count) {
+    throw 'Conteos o controles diferentes al baseline'
+  }
+  if ($actual[-1] -ne '0' -or $actual[-2] -ne '0') {
+    throw 'Hay filas invalidas'
+  }
+  $watch.Stop()
+  $actual | Add-Content $log
+  "BACKUP=$($dump.Name) INICIO=$backupStart" | Add-Content $log
+  "RTO_s=$($watch.Elapsed.TotalSeconds)" | Add-Content $log
+  "RPO_s=$(($incident-$backupStart).TotalSeconds)" | Add-Content $log
+  'OK' | Add-Content $log
+  exit 0
+} catch {
+  "ERROR: $_" | Add-Content $log
+  exit 1
+}
+
+--- ARCHIVO: TP6\output\scripts\validate.sql ---
+SELECT 'categoria' AS tabla, count(*) AS filas FROM public.categoria
+UNION ALL SELECT 'usuario', count(*) FROM public.usuario
+UNION ALL SELECT 'producto', count(*) FROM public.producto
+UNION ALL SELECT 'pedido', count(*) FROM public.pedido
+UNION ALL SELECT 'detalle_pedido', count(*) FROM public.detalle_pedido
+ORDER BY tabla;
+SELECT count(*) AS productos_invalidos FROM public.producto
+WHERE precio < 0 OR stock < 0;
+SELECT count(*) AS detalles_invalidos FROM public.detalle_pedido
+WHERE cantidad <= 0 OR precio_unitario < 0;
+
+--- ARCHIVO: tp7\consultas_mongodb.js ---
+// Ejecutar desde tp7: mongosh --quiet --file consultas_mongodb.js
+// Base exclusiva del laboratorio. Una repetición verifica los datos existentes.
+const fs = require("node:fs");
+const assert = require("node:assert/strict");
+const pedidos = db.getSiblingDB("food_store_tp7").getCollection("pedidos");
+const muestra = EJSON.parse(fs.readFileSync("pedidos_foodstore.ejson", "utf8"));
+const ids = muestra.map(pedido => pedido._id);
+assert.equal(new Set(ids).size, 5, "El lote debe contener cinco pedidos distintos");
+
+const previos = pedidos.find({ _id: { $in: ids } }).toArray();
+const esperados = new Map(muestra.map(pedido => [pedido._id, pedido]));
+for (const pedido of previos) {
+  assert.deepEqual(
+    JSON.parse(EJSON.stringify(pedido)),
+    JSON.parse(EJSON.stringify(esperados.get(pedido._id))),
+    "El documento existente difiere del respaldo: " + pedido._id
+  );
+}
+const existentes = new Set(previos.map(pedido => pedido._id));
+const nuevos = muestra.filter(pedido => !existentes.has(pedido._id));
+if (nuevos.length > 0) pedidos.insertMany(nuevos);
+
+const lote = { _id: { $in: ids } };
+const proyeccion = { _id: 1, estado: 1 };
+const todos = pedidos.find(lote, proyeccion).sort({ _id: 1 }).toArray();
+const porEstado = pedidos.find({ ...lote, estado: "PENDIENTE" }, proyeccion)
+  .sort({ _id: 1 }).toArray();
+const porProducto = pedidos.find({ ...lote, "lineas.producto_id": "4" }, proyeccion)
+  .sort({ _id: 1 }).toArray();
+const porTotal = pedidos.find(
+  { ...lote, total: { $gt: NumberDecimal("1000.00") } },
+  { _id: 1, estado: 1, total: 1 }
+).sort({ _id: 1 }).toArray();
+
+print(EJSON.stringify({
+  nuevos: nuevos.length,
+  documento_ejemplo: pedidos.findOne({ _id: "2" }),
+  a: todos,
+  b: porEstado,
+  c: porProducto,
+  d: porTotal,
+}, null, 2));
+
+const idsDe = filas => JSON.parse(JSON.stringify(filas.map(fila => fila._id)));
+assert.deepEqual(idsDe(todos), ["1", "2", "3", "4", "5"]);
+assert.deepEqual(idsDe(porEstado), ["1", "2"]); // Salida PostgreSQL del respaldo TP6.
+assert.deepEqual(idsDe(porProducto), ["2"]); // Salida PostgreSQL del respaldo TP6.
+assert.deepEqual(idsDe(porTotal), ["2", "4"]);
+print("Verificación de IDs completada.");
+
+
+--- ARCHIVO: tp7\consultas_postgresql.sql ---
+-- Food Store TP7. Ejecutar con psql sobre la copia de desarrollo.
+\set ON_ERROR_STOP on
+BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY;
+
+-- b) Pedidos pendientes del lote migrado.
+SELECT p.id, p.estado
+FROM public.pedido AS p
+WHERE NOT p.eliminado AND p.id IN (1, 2, 3, 4, 5)
+  AND p.estado = 'PENDIENTE'
+ORDER BY p.id;
+
+-- c) Pedidos con Pizza Pepperoni (producto 4), una fila por pedido.
+SELECT p.id, p.estado
+FROM public.pedido AS p
+WHERE NOT p.eliminado AND p.id IN (1, 2, 3, 4, 5)
+  AND EXISTS (
+    SELECT 1
+    FROM public.detalle_pedido AS d
+    JOIN public.producto AS pr ON pr.id = d.producto_id AND NOT pr.eliminado
+    WHERE d.pedido_id = p.id AND NOT d.eliminado AND d.producto_id = 4
+  )
+ORDER BY p.id;
+
+-- Control de integridad del lote. Cero filas indica que pasó el control.
+WITH control AS (
+  SELECT p.id, count(d.id) AS lineas, p.total,
+         coalesce(sum(d.subtotal), 0) AS suma,
+         count(d.id) FILTER (
+           WHERE d.cantidad <= 0 OR d.precio_unitario < 0
+             OR d.subtotal <> d.cantidad * d.precio_unitario
+             OR pr.id IS NULL
+         ) AS lineas_invalidas
+  FROM public.pedido AS p
+  JOIN public.usuario AS u ON u.id = p.usuario_id AND NOT u.eliminado
+  LEFT JOIN public.detalle_pedido AS d ON d.pedido_id = p.id AND NOT d.eliminado
+  LEFT JOIN public.producto AS pr ON pr.id = d.producto_id AND NOT pr.eliminado
+  WHERE NOT p.eliminado AND p.id IN (1, 2, 3, 4, 5)
+  GROUP BY p.id
+)
+SELECT * FROM control
+WHERE lineas = 0 OR total <> suma OR lineas_invalidas > 0;
+
+-- Exportación reproducible de los cinco documentos, sin datos personales.
+-- Para guardar solo esta salida desde psql, usar \o antes y después del SELECT.
+SELECT jsonb_pretty(jsonb_agg(
+  jsonb_build_object(
+    '_id', p.id::text,
+    'fecha', to_char(p.fecha, 'YYYY-MM-DD'),
+    'estado', p.estado,
+    'forma_pago', p.forma_pago,
+    'total', jsonb_build_object('$numberDecimal', p.total::text),
+    'cliente', jsonb_build_object('id', u.id::text),
+    'lineas', (
+      SELECT jsonb_agg(jsonb_build_object(
+        'id', d.id::text, 'producto_id', pr.id::text, 'producto', pr.nombre,
+        'cantidad', d.cantidad,
+        'precio_unitario', jsonb_build_object('$numberDecimal', d.precio_unitario::text),
+        'subtotal', jsonb_build_object('$numberDecimal', d.subtotal::text)
+      ) ORDER BY d.id)
+      FROM public.detalle_pedido AS d
+      JOIN public.producto AS pr ON pr.id = d.producto_id AND NOT pr.eliminado
+      WHERE d.pedido_id = p.id AND NOT d.eliminado
+    )
+  ) ORDER BY p.id
+))
+FROM public.pedido AS p
+JOIN public.usuario AS u ON u.id = p.usuario_id AND NOT u.eliminado
+WHERE NOT p.eliminado AND p.id IN (1, 2, 3, 4, 5);
+
+ROLLBACK;
+
+--- ARCHIVO: tp7\mongoose_demo.js ---
+// Ejecutar con Node.js desde tp7 luego de cargar consultas_mongodb.js.
+const mongoose = require("mongoose");
+const { Schema } = mongoose;
+
+const identificador = { type: String, required: true, match: /^[1-9][0-9]*$/ };
+const importe = {
+  type: Schema.Types.Decimal128,
+  required: true,
+  validate: valor => /^[0-9]+\.[0-9]{2}$/.test(valor.toString()),
+};
+
+const clienteSchema = new Schema({ id: identificador }, { _id: false });
+const lineaSchema = new Schema({
+  id: identificador,
+  producto_id: identificador,
+  producto: { type: String, required: true },
+  cantidad: {
+    type: Number, required: true, min: 1, max: 2147483647, validate: Number.isInteger,
+  },
+  precio_unitario: importe,
+  subtotal: importe,
+}, { _id: false });
+
+const pedidoSchema = new Schema({
+  _id: identificador,
+  fecha: { type: String, required: true, match: /^\d{4}-\d{2}-\d{2}$/ },
+  estado: {
+    type: String, required: true, enum: ["PENDIENTE", "CONFIRMADO", "TERMINADO", "CANCELADO"],
+  },
+  forma_pago: { type: String, required: true, enum: ["TARJETA", "TRANSFERENCIA", "EFECTIVO"] },
+  total: importe,
+  cliente: { type: clienteSchema, required: true },
+  lineas: {
+    type: [lineaSchema], required: true,
+    validate: lineas => lineas.length > 0,
+  },
+}, { collection: "pedidos", versionKey: false, autoCreate: false, autoIndex: false });
+
+const Pedido = mongoose.model("Pedido", pedidoSchema);
+
+async function main() {
+  try {
+    await mongoose.connect(process.env.MONGODB_URI ?? "mongodb://127.0.0.1:27017", {
+      dbName: "food_store_tp7",
+      serverSelectionTimeoutMS: 5000,
+    });
+    const pedido = await Pedido.findById("2").orFail();
+    await pedido.validate();
+    console.log(JSON.stringify(pedido.toObject(), null, 2));
+  } finally {
+    await mongoose.disconnect();
+  }
+}
+
+main().catch(error => {
+  console.error(error.message);
+  process.exitCode = 1;
+});
+
+--- ARCHIVO: tp8\food-store\movil\cargar_cache.sql ---
+-- Ejecutar dentro de la misma transacción que reemplaza snapshot_servidor.
+INSERT INTO producto_cache
+SELECT id,nombre,precio_centavos,stock,
+       CASE disponible WHEN 't' THEN 1 ELSE 0 END,
+       CASE eliminado WHEN 't' THEN 1 ELSE 0 END,fecha_copia
+FROM snapshot_servidor WHERE 1
+ON CONFLICT(id) DO UPDATE SET
+ nombre=excluded.nombre, precio_centavos=excluded.precio_centavos,
+ stock_visto=excluded.stock_visto, disponible=excluded.disponible,
+ eliminado=excluded.eliminado, fecha_copia=excluded.fecha_copia;
+
+-- Solo es correcto porque esta es una instantánea COMPLETA, no un delta.
+UPDATE producto_cache SET disponible=0, eliminado=1,
+ fecha_copia=COALESCE((SELECT MAX(fecha_copia) FROM snapshot_servidor),strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+WHERE NOT EXISTS (SELECT 1 FROM snapshot_servidor s WHERE s.id=producto_cache.id);
+
+--- ARCHIVO: tp8\food-store\movil\pruebas_sqlite.sql ---
+-- Ejecutar UNA VEZ después del esquema y la carga inicial del catálogo.
+-- C7 contiene errores esperados. En sqlite3 usar .bail off (valor por defecto).
+-- ejecutar.py comprueba la clase de error y el conteo tras cada rechazo.
+PRAGMA foreign_keys = ON;
+BEGIN;
+INSERT INTO pedido_borrador VALUES ('00000000-0000-4000-8000-000000000001','operador_demo','EFECTIVO','2026-11-06T12:00:00Z');
+INSERT INTO item_borrador SELECT '00000000-0000-4000-8000-000000000001',id,1,precio_centavos FROM producto_cache WHERE id=1;
+INSERT INTO cola_sync(solicitud_uuid,id_local) VALUES ('10000000-0000-4000-8000-000000000001','00000000-0000-4000-8000-000000000001');
+COMMIT;
+
+-- Otra operación completa deshecha: no deben quedar sus tres filas.
+BEGIN;
+INSERT INTO pedido_borrador VALUES ('00000000-0000-4000-8000-000000000099','operador_demo','EFECTIVO','2026-11-06T12:00:00Z');
+INSERT INTO item_borrador SELECT '00000000-0000-4000-8000-000000000099',id,1,precio_centavos FROM producto_cache WHERE id=1;
+INSERT INTO cola_sync(solicitud_uuid,id_local) VALUES ('10000000-0000-4000-8000-000000000099','00000000-0000-4000-8000-000000000099');
+ROLLBACK;
+SELECT 'ROLLBACK',count(*) FROM pedido_borrador WHERE id_local='00000000-0000-4000-8000-000000000099';
+
+-- C1: solo lee el archivo SQLite, sin consultas al servidor.
+SELECT 'C1',id,nombre,precio_centavos,stock_visto FROM producto_cache WHERE disponible=1 AND eliminado=0 ORDER BY id;
+
+SAVEPOINT c7_cantidad;
+-- EXPECT_ERROR CHECK
+INSERT INTO item_borrador VALUES ('00000000-0000-4000-8000-000000000001',2,0,16000);
+ROLLBACK TO c7_cantidad;
+RELEASE c7_cantidad;
+SAVEPOINT c7_fk;
+-- EXPECT_ERROR FOREIGN KEY
+INSERT INTO item_borrador VALUES ('00000000-0000-4000-8000-000000000001',999999,1,100);
+ROLLBACK TO c7_fk;
+RELEASE c7_fk;
+SELECT 'C7_items',count(*) FROM item_borrador;
+
+--- ARCHIVO: tp8\food-store\movil\schema_sqlite.sql ---
+PRAGMA foreign_keys = ON;
+
+CREATE TABLE producto_cache (
+ id INTEGER PRIMARY KEY,
+ nombre TEXT NOT NULL,
+ precio_centavos INTEGER NOT NULL CHECK(precio_centavos >= 0),
+ stock_visto INTEGER NOT NULL CHECK(stock_visto >= 0),
+ disponible INTEGER NOT NULL CHECK(disponible IN (0,1)),
+ eliminado INTEGER NOT NULL CHECK(eliminado IN (0,1)),
+ fecha_copia TEXT NOT NULL
+) STRICT;
+
+CREATE TABLE pedido_borrador (
+ id_local TEXT PRIMARY KEY CHECK(
+   length(id_local)=36 AND substr(id_local,9,1)='-'
+   AND substr(id_local,14,1)='-' AND substr(id_local,19,1)='-'
+   AND substr(id_local,24,1)='-' AND length(replace(id_local,'-',''))=32
+   AND replace(id_local,'-','') NOT GLOB '*[^0-9a-f]*'),
+ usuario TEXT NOT NULL CHECK(length(trim(usuario))>0),
+ forma_pago TEXT NOT NULL CHECK(forma_pago IN ('EFECTIVO','TARJETA','TRANSFERENCIA')),
+ fecha TEXT NOT NULL
+) STRICT;
+
+CREATE TABLE item_borrador (
+ id_local TEXT NOT NULL REFERENCES pedido_borrador(id_local),
+ producto_id INTEGER NOT NULL REFERENCES producto_cache(id),
+ cantidad INTEGER NOT NULL CHECK(cantidad > 0),
+ precio_centavos_visto INTEGER NOT NULL CHECK(precio_centavos_visto >= 0),
+ PRIMARY KEY(id_local, producto_id)
+) STRICT;
+
+CREATE TABLE cola_sync (
+ solicitud_uuid TEXT PRIMARY KEY CHECK(
+   length(solicitud_uuid)=36 AND substr(solicitud_uuid,9,1)='-'
+   AND substr(solicitud_uuid,14,1)='-' AND substr(solicitud_uuid,19,1)='-'
+   AND substr(solicitud_uuid,24,1)='-' AND length(replace(solicitud_uuid,'-',''))=32
+   AND replace(solicitud_uuid,'-','') NOT GLOB '*[^0-9a-f]*'),
+ id_local TEXT NOT NULL REFERENCES pedido_borrador(id_local),
+ estado TEXT NOT NULL DEFAULT 'PENDIENTE'
+   CHECK(estado IN ('PENDIENTE','CONFLICTO','RECHAZADO','SIMULADO_APROBADO')),
+ motivo TEXT NOT NULL DEFAULT ''
+) STRICT;
+
+-- Una sola solicitud pendiente por borrador; admite reintentos con UUID nuevo.
+CREATE UNIQUE INDEX uq_pendiente_borrador ON cola_sync(id_local) WHERE estado='PENDIENTE';
+CREATE INDEX idx_items_producto ON item_borrador(producto_id);
+
+-- Tabla auxiliar para recibir CSV de PostgreSQL; t/f no se convierten a INTEGER.
+CREATE TABLE snapshot_servidor (
+ id INTEGER PRIMARY KEY,
+ nombre TEXT NOT NULL,
+ precio_centavos INTEGER NOT NULL CHECK(precio_centavos >= 0),
+ stock INTEGER NOT NULL CHECK(stock >= 0),
+ disponible TEXT NOT NULL CHECK(disponible IN ('t','f')),
+ eliminado TEXT NOT NULL CHECK(eliminado IN ('t','f')),
+ fecha_copia TEXT NOT NULL
+) STRICT;
+
+--- ARCHIVO: tp8\food-store\movil\semaforo.sql ---
+PRAGMA foreign_keys = ON;
+BEGIN IMMEDIATE;
+WITH problemas AS (
+ SELECT q.solicitud_uuid,
+   COUNT(i.producto_id) AS lineas,
+   SUM(CASE WHEN i.producto_id IS NOT NULL AND
+     (s.id IS NULL OR s.disponible <> 't' OR s.eliminado <> 'f' OR i.cantidad > s.stock)
+     THEN 1 ELSE 0 END) AS rojos,
+   SUM(CASE WHEN i.precio_centavos_visto <> s.precio_centavos THEN 1 ELSE 0 END) AS amarillos,
+   MAX(s.fecha_copia) AS copia
+ FROM cola_sync q
+ LEFT JOIN item_borrador i ON i.id_local=q.id_local
+ LEFT JOIN snapshot_servidor s ON s.id=i.producto_id
+ WHERE q.estado='PENDIENTE'
+ GROUP BY q.solicitud_uuid
+), decisiones AS (
+ SELECT solicitud_uuid,
+ CASE WHEN lineas=0 OR rojos>0 THEN 'RECHAZADO'
+      WHEN amarillos>0 THEN 'CONFLICTO' ELSE 'SIMULADO_APROBADO' END AS estado,
+ CASE WHEN lineas=0 THEN 'Borrador sin items'
+      WHEN rojos>0 THEN 'Producto ausente/no disponible/eliminado o stock insuficiente; items=' || rojos
+      WHEN amarillos>0 THEN 'Cambio de precio; requiere aceptacion; items=' || amarillos
+      ELSE 'Coincide con la instantanea; NO confirma venta ni reserva stock' END
+      || '; copia=' || COALESCE(copia,'sin coincidencias') AS motivo
+ FROM problemas
+)
+UPDATE cola_sync
+SET estado=(SELECT estado FROM decisiones d WHERE d.solicitud_uuid=cola_sync.solicitud_uuid),
+    motivo=(SELECT motivo FROM decisiones d WHERE d.solicitud_uuid=cola_sync.solicitud_uuid)
+WHERE estado='PENDIENTE';
+COMMIT;
+
+--- ARCHIVO: tp8\food-store\docs\kiro\design.md ---
+# Diseño
+
+PostgreSQL es autoridad de catálogo, precio, stock y ventas. Se usa una base de laboratorio nueva con productos ficticios compatibles con Food Store. Una vista incluye bajas lógicas (lápidas) y una fecha común de copia. CSV transporta booleanos t/f.
+
+SQLite usa cuatro tablas STRICT, FK activas por conexión, centavos enteros, UUID de texto y PK compuesta en ítems. snapshot_servidor es una tabla auxiliar. La importación reemplaza la instantánea dentro de una transacción y actualiza la caché conservando lápidas. Un producto ausente se marca no disponible y eliminado en la caché, sin borrar filas referenciadas.
+
+La consulta de semáforo agrupa por solicitud: rojo tiene prioridad sobre amarillo y verde. Una solicitud sin ítems se rechaza. Solo se actualiza PENDIENTE. Se conserva la solicitud resuelta y su motivo; la aceptación de un precio crea una nueva solicitud.
+
+Python estándar orquesta psql y sqlite3 para automatizar exportaciones y pruebas. No es una aplicación móvil ni procesa ventas. En producción, un endpoint autenticado validaría y registraría la idempotencia y la venta en una única transacción del servidor.
+
+--- ARCHIVO: tp8\food-store\docs\kiro\requirements.md ---
+# Food Store móvil — requisitos EARS
+
+Redactados antes de implementar esta solución. Datos ficticios; solo simulación.
+
+- REQ-01: WHEN el catálogo ya está copiado y no existe conectividad, THE SYSTEM SHALL permitir consultar los productos disponibles y guardar un borrador con sus ítems y solicitud en una sola transacción. Prueba: C1 y COMMIT/ROLLBACK de consigna 1.c.
+- REQ-02: WHEN una solicitud pendiente contiene un producto ausente, eliminado, no disponible o con stock insuficiente, THE SYSTEM SHALL marcarla RECHAZADO, con prioridad sobre cualquier cambio de precio. Pruebas: C3 y C4.
+- REQ-03: WHEN no hay causas de rechazo y cambia algún precio, THE SYSTEM SHALL marcar CONFLICTO; WHEN el cliente acepta explícitamente el nuevo precio, THE SYSTEM SHALL crear una solicitud nueva y conservar la anterior. Prueba: C2.
+- REQ-04: WHEN todos los ítems coinciden, THE SYSTEM SHALL marcar SIMULADO_APROBADO sin confirmar ventas ni modificar PostgreSQL, impedir UUID duplicados y no reevaluar solicitudes resueltas. Pruebas: C5 y C6; C7 verifica integridad de entrada.
+
+La aceptación del cliente debe ser explícita; en la prueba C2 se simula como una acción separada.
+
+--- ARCHIVO: tp8\food-store\docs\kiro\tasks.md ---
+# Tareas verificables
+
+- [ ] Revisar estos documentos en Kiro y guardar evidencia de la sesión.
+- [ ] Solicitar a OpenCode la generación/revisión a partir de estos requisitos; conservar salida real.
+- [ ] Crear esquema STRICT y pruebas de transacciones y restricciones (C1, C7).
+- [ ] Crear vista, exportar CSV e importar instantánea con lápidas.
+- [ ] Implementar semáforo y probar C2–C6 con PostgreSQL aislado.
+- [ ] Comparar pedidos y stock antes/después de cada simulación.
+- [ ] Revisar scripts disponibles de unidades anteriores; documentar decisiones verificables.
+- [ ] Elaborar informe de hasta seis páginas, bitácora, DUIA y ensayo.
+
+Estos casilleros se completan solamente con evidencia de ejecución. La autoría y las limitaciones se registran en la bitácora.
+
+
+Nota de la copia de entrega: se sustituyo un correo del ejemplo SQL por una direccion ficticia.
